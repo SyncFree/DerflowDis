@@ -38,7 +38,7 @@ bindVar(X1, Y1) ->
 
 bindValue(Y1, V) ->
    receive
-   after 100 -> io:format("~n")
+       after 100 -> io:format("~n")
    end,
    _X = derflowdis_vnode:bind(Y1, V),
    io:format("Bind Value finished ~w ~w ~n",[Y1,V]).
@@ -46,7 +46,7 @@ bindValue(Y1, V) ->
 producer(Value, N, Output) ->
     if (N>0) ->
         derflowdis:waitNeeded(Output),
-	{id,Next} = derflowdis:bind(Output, Value),
+        {id,Next} = derflowdis:bind(Output, Value),
         producer(Value+1, N-1,  Next);
     true ->
         derflowdis:bind(Output, nil)
@@ -60,8 +60,8 @@ loop(S1, S2, End) ->
     {PS2, _} = S2,
     io:format("Buff:Bound for consumer ~w-> ~w ~w~n",[PS1,PS2,S1Value]),
     case derflowdis:next(End) of {nil, _} ->
-        ok;	
-	EndNext ->
+        ok; 
+    EndNext ->
        loop(S1Next, S2Next, EndNext)    
     end.
 
@@ -72,25 +72,25 @@ buffer(S1, Size, S2) ->
 
 drop_list(S, Size) ->
     if Size == 0 ->
-	S;
-      true ->
-       	Next = derflowdis:next(S),
-	io:format("Drop next ~w ~n",[S]),
-    	drop_list(Next, Size-1)
+        S;
+    true ->
+        Next = derflowdis:next(S),
+        io:format("Drop next ~w ~n",[S]),
+        drop_list(Next, Size-1)
     end.
 
 consumer(S2, Size, F) ->
     if Size == 0 ->
-	io:format("Finished~n");
-	true ->
-	    case derflowdis:read(S2) of
-		{nil, _} ->
-	   	io:format("Cons:Reading end~n");
-		{Value, Next} ->
-	   	{PS2,_} = S2,
-	   	io:format("Cons:Id ~w Consume ~w, Get ~w, Next~w ~n",[PS2,Value, F(Value),Next]),
-	   	consumer(Next, Size-1, F)
-    	end
+        io:format("Finished~n");
+    true ->
+        case derflowdis:read(S2) of
+        {nil, _} ->
+            io:format("Cons:Reading end~n");
+        {Value, Next} ->
+            {PS2,_} = S2,
+            io:format("Cons:Id ~w Consume ~w, Get ~w, Next~w ~n",[PS2,Value, F(Value),Next]),
+            consumer(Next, Size-1, F)
+        end
     end.
 
 

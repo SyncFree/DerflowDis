@@ -5,18 +5,18 @@
 
 -export([asyncBind/2,
          asyncBind/3,
-	 bind/2,
-	 bind/3,
+     bind/2,
+     bind/3,
          read/1,
-	 touch/1,
-	 next/1,
-	 isDet/1,
-	 waitNeeded/1,
+     touch/1,
+     next/1,
+     isDet/1,
+     waitNeeded/1,
          declare/1,
          declare/2,
-	 get_new_id/0,
-	 put/4,
-	 execute_and_put/5]).
+     get_new_id/0,
+     put/4,
+     execute_and_put/5]).
 
 -export([start_vnode/1,
          init/1,
@@ -120,7 +120,7 @@ notifyValue(Id, Value) ->
     PrefList = riak_core_apl:get_primary_apl(DocIdx, 1, derflowdis),
     [{IndexNode, _Type}] = PrefList,
     riak_core_vnode_master:command(IndexNode, {notifyValue, Id, Value}, derflowdis_vnode_master).
-	
+    
 
 
 get_new_id() -> 
@@ -160,12 +160,12 @@ handle_command({asyncBind, Id, F, Arg}, _From, State=#state{partition=Partition,
     [{_Key, V}] = ets:lookup(Table, Id),
     PrevNextKey = V#dv.next,
     if PrevNextKey == empty -> 
-	Next = State#state.clock+1,
-    	NextKey={Next, Partition},
-    	declare(NextKey);
-	true ->
-	{Next, _} = PrevNextKey,
-	NextKey= PrevNextKey
+        Next = State#state.clock+1,
+        NextKey={Next, Partition},
+        declare(NextKey);
+    true ->
+        {Next, _} = PrevNextKey,
+        NextKey= PrevNextKey
     end,
     spawn(derflowdis_vnode, execute_and_put, [F, Arg, NextKey, Id, Table]),
     {reply, {id, NextKey}, State#state{clock=Next}};
@@ -174,12 +174,12 @@ handle_command({asyncBind,Id, Value}, _From, State=#state{partition=Partition, t
     [{_Key,V}] = ets:lookup(Table, Id),
     PrevNextKey = V#dv.next,
     if PrevNextKey == empty -> 
-	Next = State#state.clock+1,
-    	NextKey={Next, Partition},
-    	declare(NextKey);
-	true ->
-	{Next, _} = PrevNextKey,
-	NextKey= PrevNextKey
+        Next = State#state.clock+1,
+        NextKey={Next, Partition},
+        declare(NextKey);
+    true ->
+        {Next, _} = PrevNextKey,
+        NextKey= PrevNextKey
     end,
     spawn(derflowdis_vnode, put, [Value, NextKey, Id, Table]),
     {reply, {id, NextKey}, State#state{clock=Next}};
@@ -193,144 +193,144 @@ handle_command({bind, Id, F, Arg}, _From, State=#state{partition=Partition, tabl
 handle_command({bind,Id, Value}, From, State=#state{partition=Partition, table=Table}) ->
     %io:format("Process ~w asyncBinding ~w~n",[From, Id]),
     case Value of {id, DVId} ->
-	ets:insert(Table, {Id, #dv{value={id,DVId}}}),
-	fetch(DVId, Id, From),
-	{noreply, State};
-	_ ->
-    	[{_Key,V}] = ets:lookup(Table, Id),
-    	{NextClock, NextKey} = nextKey(V#dv.next, State#state.clock, Partition),
-    	put(Value, NextKey, Id, Table),
-    	%io:format("End process ~w asyncBinding ~w~n",[From, Id]),
-    	{reply, {id, NextKey}, State#state{clock=NextClock}}
+    ets:insert(Table, {Id, #dv{value={id,DVId}}}),
+    fetch(DVId, Id, From),
+    {noreply, State};
+    _ ->
+        [{_Key,V}] = ets:lookup(Table, Id),
+        {NextClock, NextKey} = nextKey(V#dv.next, State#state.clock, Partition),
+        put(Value, NextKey, Id, Table),
+        %io:format("End process ~w asyncBinding ~w~n",[From, Id]),
+        {reply, {id, NextKey}, State#state{clock=NextClock}}
     end;
 
 handle_command({fetch, TargetId, FromId, FromP}, _From, State=#state{partition=Partition,clock= Clock, table=Table}) ->
     [{_,DV}] = ets:lookup(Table, TargetId),
     io:format("In fetch~w~w DV ~w ~n",[FromId, TargetId, DV]),
     if DV#dv.bounded == true ->
-	  io:format("DV Bounded~n"),
-	  replyFetch(FromId, FromP, DV),
-          {noreply, State};
-	true ->
-	  case DV#dv.value of {id, BindId} ->
-	    	fetch(BindId, FromId, FromP),
-	    	{noreply, State};
-	   _ ->
-	  	{NextClock, NextKey} = nextKey(DV#dv.next, Clock, Partition), 
-	  	io:format("Adding to binding list ~w ~n",[FromId]),
-         	BindingList = lists:append(DV#dv.bindingList, [FromId]),
-	  	DV1 = DV#dv{bindingList=BindingList, next=NextKey},
-	  	ets:insert(Table, {TargetId, DV1}),
-	  	replyFetch(FromId, FromP, DV1),
-	  	{noreply, State#state{clock=NextClock}}
-    	  end
+      io:format("DV Bounded~n"),
+      replyFetch(FromId, FromP, DV),
+      {noreply, State};
+    true ->
+      case DV#dv.value of {id, BindId} ->
+            fetch(BindId, FromId, FromP),
+            {noreply, State};
+       _ ->
+        {NextClock, NextKey} = nextKey(DV#dv.next, Clock, Partition), 
+        io:format("Adding to binding list ~w ~n",[FromId]),
+            BindingList = lists:append(DV#dv.bindingList, [FromId]),
+        DV1 = DV#dv{bindingList=BindingList, next=NextKey},
+        ets:insert(Table, {TargetId, DV1}),
+        replyFetch(FromId, FromP, DV1),
+        {noreply, State#state{clock=NextClock}}
+          end
      end;
 
 handle_command({replyFetch, FromId, FromP, FetchDV}, _From, State=#state{table=Table}) ->
-    	if FetchDV#dv.bounded == true ->
-		Value = FetchDV#dv.value,
-		Next = FetchDV#dv.next,
-        	put(Value, Next, FromId, Table),
-		replyToAll([FromP], {id, Next});
-		true ->
-    	        [{_,DV}] = ets:lookup(Table, FromId),
-		DV1 = DV#dv{next= FetchDV#dv.next},
-		ets:insert(Table, {FromId, DV1}),
-		replyToAll([FromP], {id, FetchDV#dv.next})
-    	end,
-    	{noreply, State};
+    if FetchDV#dv.bounded == true ->
+        Value = FetchDV#dv.value,
+        Next = FetchDV#dv.next,
+        put(Value, Next, FromId, Table),
+        replyToAll([FromP], {id, Next});
+    true ->
+        [{_,DV}] = ets:lookup(Table, FromId),
+        DV1 = DV#dv{next= FetchDV#dv.next},
+        ets:insert(Table, {FromId, DV1}),
+        replyToAll([FromP], {id, FetchDV#dv.next})
+    end,
+    {noreply, State};
 
 handle_command({notifyValue, Id, Value}, _From, State=#state{table=Table}) ->
-    	[{_,DV}] = ets:lookup(Table, Id),
-	Next = DV#dv.next,
-        put(Value, Next, Id, Table),
-    	{noreply, State};
+    [{_,DV}] = ets:lookup(Table, Id),
+    Next = DV#dv.next,
+    put(Value, Next, Id, Table),
+    {noreply, State};
 
 
 handle_command({waitNeeded, Id}, From, State=#state{table=Table}) ->
     [{_Key,V}] = ets:lookup(Table, Id),
     if V#dv.bounded == true ->
-	{reply, ok, State};
+    {reply, ok, State};
      true ->
-    	case V#dv.waitingThreads of [_H|_T] ->
-        	{reply, ok, State};
-       		 _ ->
-        	ets:insert(Table, {Id, V#dv{lazy=true, creator=From}}),
-       		{noreply, State}
-    	end
+        case V#dv.waitingThreads of [_H|_T] ->
+            {reply, ok, State};
+             _ ->
+            ets:insert(Table, {Id, V#dv{lazy=true, creator=From}}),
+            {noreply, State}
+        end
     end;
 
 
 handle_command({read,X}, From, State=#state{table=Table}) ->
-        [{_Key,V}] = ets:lookup(Table, X),
-        Value = V#dv.value,
-        Bounded = V#dv.bounded,
-        Creator = V#dv.creator,
-        Lazy = V#dv.lazy,
-        %%%Need to distinguish that value is not calculated or is the end of a list%%%
-        if Bounded == true ->
-	  %io:format("Process: ~w read for ~w~n",[From, X]),
-          {reply, {Value, V#dv.next}, State};
-         true ->
-          if Lazy == true ->
-                WT = lists:append(V#dv.waitingThreads, [From]),
-                V1 = V#dv{waitingThreads=WT},
-                ets:insert(Table, {X, V1}),
-		replyToAll([Creator],ok),
-                {noreply, State};
-          true ->
-		io:format("Process: ~w waiting for ~w~n",[From, X]),
-                WT = lists:append(V#dv.waitingThreads, [From]),
-                V1 = V#dv{waitingThreads=WT},
-                ets:insert(Table, {X, V1}),
-	  	%io:format("End process: ~w waiting for ~w~n",[From, X]),
-                {noreply, State}
-          end
-        end;
+    [{_Key,V}] = ets:lookup(Table, X),
+    Value = V#dv.value,
+    Bounded = V#dv.bounded,
+    Creator = V#dv.creator,
+    Lazy = V#dv.lazy,
+    %%%Need to distinguish that value is not calculated or is the end of a list%%%
+    if Bounded == true ->
+      %io:format("Process: ~w read for ~w~n",[From, X]),
+      {reply, {Value, V#dv.next}, State};
+    true ->
+        if Lazy == true ->
+            WT = lists:append(V#dv.waitingThreads, [From]),
+            V1 = V#dv{waitingThreads=WT},
+            ets:insert(Table, {X, V1}),
+            replyToAll([Creator],ok),
+            {noreply, State};
+        true ->
+            io:format("Process: ~w waiting for ~w~n",[From, X]),
+            WT = lists:append(V#dv.waitingThreads, [From]),
+            V1 = V#dv{waitingThreads=WT},
+            ets:insert(Table, {X, V1}),
+            %io:format("End process: ~w waiting for ~w~n",[From, X]),
+            {noreply, State}
+        end
+    end;
 
 handle_command({touch,X}, _From, State=#state{partition=Partition,clock=Clock, table=Table}) ->
-        [{_Key,V}] = ets:lookup(Table, X),
-        Value = V#dv.value,
-        Bounded = V#dv.bounded,
-        Creator = V#dv.creator,
-        Lazy = V#dv.lazy,
-        %%%Need to distinguish that value is not calculated or is the end of a list%%%
-        if Bounded == true ->
-          {reply, {Value, V#dv.next}, State};
-         true ->
-	  Next = Clock+1,
-	  NextKey = {Next, Partition},
-    	  declare(NextKey),
-          V1 = V#dv{next=NextKey},
-          ets:insert(Table, {X, V1}),
-          if Lazy == true ->
-		replyToAll([Creator],ok),
-                {reply, NextKey, State#state{clock=Next}};
-          true ->
-                {reply, NextKey, State#state{clock=Next}}
-          end
-        end;
+    [{_Key,V}] = ets:lookup(Table, X),
+    Value = V#dv.value,
+    Bounded = V#dv.bounded,
+    Creator = V#dv.creator,
+    Lazy = V#dv.lazy,
+    %%%Need to distinguish that value is not calculated or is the end of a list%%%
+    if Bounded == true ->
+        {reply, {Value, V#dv.next}, State};
+    true ->
+        Next = Clock+1,
+        NextKey = {Next, Partition},
+        declare(NextKey),
+        V1 = V#dv{next=NextKey},
+        ets:insert(Table, {X, V1}),
+        if Lazy == true ->
+            replyToAll([Creator],ok),
+            {reply, NextKey, State#state{clock=Next}};
+        true ->
+            {reply, NextKey, State#state{clock=Next}}
+        end
+    end;
 
 handle_command({next,X}, _From, State=#state{partition=Partition,clock=Clock,table=Table}) ->
-        [{_Key,V}] = ets:lookup(Table, X),
-        PrevNextKey = V#dv.next,
-	if PrevNextKey == empty ->
-	  Next = Clock+1,
-	  NextKey = {Next, Partition},
-    	  declare(NextKey),
-          V1 = V#dv{next=NextKey},
-          ets:insert(Table, {X, V1}),
-	  {reply, NextKey, State#state{clock=Next}}; 
-	true ->
-	   {reply, PrevNextKey, State}
-	end;
+    [{_Key,V}] = ets:lookup(Table, X),
+    PrevNextKey = V#dv.next,
+    if PrevNextKey == empty ->
+        Next = Clock+1,
+        NextKey = {Next, Partition},
+        declare(NextKey),
+        V1 = V#dv{next=NextKey},
+        ets:insert(Table, {X, V1}),
+        {reply, NextKey, State#state{clock=Next}}; 
+    true ->
+       {reply, PrevNextKey, State}
+    end;
 
 handle_command({isDet,Id}, _From, State=#state{table=Table}) ->
-        [{_Key,V}] = ets:lookup(Table, Id),
-        Bounded = V#dv.bounded,
-	{reply, Bounded, State};
+    [{_Key,V}] = ets:lookup(Table, Id),
+    Bounded = V#dv.bounded,
+    {reply, Bounded, State};
 
-	
+    
 
 handle_command(Message, _Sender, State) ->
     ?PRINT({unhandled_command, Message}),
@@ -419,20 +419,20 @@ replyToAll([H|T], Result) ->
 
 notifyAll(L, Value) ->
     case L of [H|T] ->
-    	notifyValue(H, Value),
+        notifyValue(H, Value),
         io:format("Notifying ~w~n", [H]),
-	notifyAll(T, Value);
-	[] ->
-	ok
+        notifyAll(T, Value);
+    [] ->
+        ok
     end.
-	
+    
 get_next_key(Clock, Partition) ->
     NextKey={NextClock=Clock+1, Partition},
     DocIdx = riak_core_util:chash_key({?BUCKET, term_to_binary(NextKey)}),
     PrefList = riak_core_apl:get_primary_apl(DocIdx, 1, derflowdis),
     [{{Index, _Node}, _Type}] = PrefList,
     if Index==Partition ->
-	get_next_key(NextClock, Partition);
+        get_next_key(NextClock, Partition);
     true ->
-	NextClock
+        NextClock
     end.

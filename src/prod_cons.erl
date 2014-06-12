@@ -15,18 +15,18 @@ test1() ->
 
 producer(Init, N, Output) ->
     if (N>0) ->
-	timer:sleep(1000),
-	{id, Next} = derflowdis:bind(Output, Init),
-	producer(Init + 1, N-1,  Next);
+    timer:sleep(1000),
+    {id, Next} = derflowdis:bind(Output, Init),
+    producer(Init + 1, N-1,  Next);
     true ->
-	derflowdis:bind(Output, nil)
+    derflowdis:bind(Output, nil)
     end.
 
 consumer(S1, F, S2) ->
     case derflowdis:read(S1) of
-	{nil, _} ->
-	    derflowdis:bind(S2, nil);
-	{Value, Next} ->
-	    {id, NextOutput} = derflowdis:bind(S2, F, Value),
-	    consumer(Next, F, NextOutput)
+    {nil, _} ->
+        derflowdis:bind(S2, nil);
+    {Value, Next} ->
+        {id, NextOutput} = derflowdis:bind(S2, F, Value),
+        consumer(Next, F, NextOutput)
     end.

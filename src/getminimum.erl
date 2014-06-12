@@ -15,37 +15,37 @@ insert(X, In, Out) ->
     io:format("Insert ~w ~n",[C+1]),
     derflowdis:waitNeeded(Out),
     case derflowdis:read(In) of 
-	{nil,_} -> %io:format("Reading end ~w~n",[X]), 
-		   {id,Next} = derflowdis:bind(Out,X),
-		   derflowdis:bind(Next, nil);
-	{V, SNext} ->
-		if X<V ->
-			{id, Next} = derflowdis:bind(Out,X), 
-			derflowdis:bind(Next, In);
-		 true -> 
-			{id,Next} = derflowdis:bind(Out,V),
-			insert(X, SNext, Next)
-		 end
+    {nil,_} -> %io:format("Reading end ~w~n",[X]), 
+       {id,Next} = derflowdis:bind(Out,X),
+       derflowdis:bind(Next, nil);
+    {V, SNext} ->
+        if X<V ->
+            {id, Next} = derflowdis:bind(Out,X), 
+            derflowdis:bind(Next, In);
+        true -> 
+            {id,Next} = derflowdis:bind(Out,V),
+            insert(X, SNext, Next)
+        end
     end.
 
 insort(List, S) ->
     case List of [H|T] ->
-	   {id,OutS} = derflowdis:declare(),
-	   insort(T, OutS),
-	   derflowdis:thread(getminimum, insert, [H, OutS, S]);
-	[] ->
-	   derflowdis:bind(S,nil)
+       {id,OutS} = derflowdis:declare(),
+       insort(T, OutS),
+       derflowdis:thread(getminimum, insert, [H, OutS, S]);
+    [] ->
+       derflowdis:bind(S,nil)
     end.
 
 copyList(Out, In) ->
    io:format("Reading ~w ~n",[In]),
    case derflowdis:read(In) of {nil,_} ->
-	derflowdis:bind(Out,nil);
-	{Value, Next} ->
-	derflowdis:waitNeeded(Out),
+       derflowdis:bind(Out,nil);
+   {Value, Next} ->
+        derflowdis:waitNeeded(Out),
         io:format("Got value ~w ~n",[Value]),
-	{id, NextKey} = derflowdis:bind(Out,Value),
-	copyList(NextKey, Next)
+        {id, NextKey} = derflowdis:bind(Out,Value),
+        copyList(NextKey, Next)
    end.
 
 

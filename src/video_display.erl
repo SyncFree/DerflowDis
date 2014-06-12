@@ -19,14 +19,14 @@ sender(Init, N, Output) ->
 skip1(Input, Output) ->
     case derflowdis:read(Input) of
     {nil, _} ->
-	derflowdis:bind(Output, nil);
+    derflowdis:bind(Output, nil);
     {_Value, Next} ->
-	Bound = derflowdis:isDet(Next),
-	if Bound ->
-	    skip1(Next, Output);
-	true ->
-	    derflowdis:bind(Output, {id, Input})
-	end
+    Bound = derflowdis:isDet(Next),
+    if Bound ->
+        skip1(Next, Output);
+    true ->
+        derflowdis:bind(Output, {id, Input})
+    end
     end.
 
 display(Input) ->
@@ -35,8 +35,8 @@ display(Input) ->
     skip1(Input, Output),
     case derflowdis:read(Output) of
     {Value, Next} ->
-	display_frame(Value),
-	display(Next)
+    display_frame(Value),
+    display(Next)
     end.
 
 display_frame(X) ->
