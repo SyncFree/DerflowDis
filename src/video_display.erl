@@ -40,4 +40,4 @@ display(Input) ->
     end.
 
 display_frame(X) ->
-    io:format("Frame: ~w~n",[X]).
+    lager:info("Frame: ~w~n",[X]).

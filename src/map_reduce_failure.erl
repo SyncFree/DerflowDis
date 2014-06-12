@@ -8,7 +8,7 @@ test() ->
     {id, Output} = derflowdis:declare(),
     Supervisor = derflowdis:thread(map_reduce, supervisor, [dict:new()]),
     jobtracker(Supervisor, Map, Reduce, Input, [Output]),
-    io:format("Final out ~w~n", [Output]),
+    lager:info("Final out ~w~n", [Output]),
     derflowdis:async_print_stream(Output).
 test_1() ->
     Map = [{map_reduce, wordCntMap}],
@@ -31,7 +31,7 @@ jobtracker(Supervisor, MapTasks, ReduceTasks, Inputs, Outputs) ->
     	derflowdis:thread_mon(Supervisor, Module2, ReduceFun, [MapOut, [], Output]),
 	jobtracker(Supervisor, MT, RT, IT, OT);
 	[] ->
-	 io:format("All jobfinished!~n")
+	 lager:info("All jobfinished!~n")
     end.
 
 spawnmap(Supervisor, Inputs, Mod, Fun, Outputs) ->
@@ -60,7 +60,7 @@ supervisor(Dict) ->
 		supervisor(Dict)
 	    end;
 	{'DOWN', Ref, process, _, Reason} ->
-	    io:format("Process killed, reference ~w, reason ~w,~n",[Ref, Reason]),
+	    lager:info("Process killed, reference ~w, reason ~w,~n",[Ref, Reason]),
 	    case dict:find(Ref, Dict) of
 	    {ok, {Module, Function, Args}} ->
 		derflowdis:thread_mon(self(), Module, Function, Args);
@@ -68,14 +68,14 @@ supervisor(Dict) ->
 		supervisor(Dict)
 	    end;
 	{'SUPERVISE', PID, Module, Function, Args} ->
-	    io:format("Supervise process ~w, that runs function ~w~n",[PID, Function]),
+	    lager:info("Supervise process ~w, that runs function ~w~n",[PID, Function]),
 	    Ref = erlang:monitor(process, PID),
 	    Dict2 = dict:store(Ref, {Module, Function, Args}, Dict),
 	    supervisor(Dict2)
     end.
 
 wordCntMap(Input, Output) ->
-   io:format("MAP ~p~n",[self()]),
+   lager:info("MAP ~p~n",[self()]),
    timer:sleep(20000),
    case Input of [H|T] ->
 	{id,Next} = derflowdis:bind(Output, H),

@@ -68,18 +68,18 @@ get_stream(Stream)->
     internal_get_stream(Stream, []).
 
 async_print_stream(Stream)->
-    %io:format("Stream: ~w~n", [Stream]),
-    %io:format("Before read async print~n"),
+    %lager:info("Stream: ~w~n", [Stream]),
+    %lager:info("Before read async print~n"),
     case read(Stream) of
 	{nil, _} ->
-	    %io:format("After read async print: nil~n"), 
+	    %lager:info("After read async print: nil~n"), 
 	    {ok, stream_read};
 	{Value, Next} ->
-	    %io:format("After read async print: ~w~n",[Value]), 
-	    io:format("~w~n",[Value]),
+	    %lager:info("After read async print: ~w~n",[Value]), 
+	    lager:info("~w~n",[Value]),
 	    async_print_stream(Next);
 	 Any ->
-	    io:format("Stream any: ~w~n",[Any])
+	    lager:info("Stream any: ~w~n",[Any])
 		
     end.
     

@@ -23,7 +23,7 @@ loop(S1, S2, End) ->
     {id, S2Next} = derflowdis:bind(S2, S1Value),
     {PS1, _} = S1,
     {PS2, _} = S2,
-    io:format("Buff:Bound for consumer ~w-> ~w ~w~n",[PS1,PS2,S1Value]),
+    lager:info("Buff:Bound for consumer ~w-> ~w ~w~n",[PS1,PS2,S1Value]),
     case derflowdis:next(End) of {nil, _} ->
         ok;	
 	EndNext ->
@@ -32,7 +32,7 @@ loop(S1, S2, End) ->
 
 buffer(S1, Size, S2) ->
     End = drop_list(S1, Size),
-    io:format("Buff:End of list ~w ~n",[End]),
+    lager:info("Buff:End of list ~w ~n",[End]),
     loop(S1, S2, End).
 
 drop_list(S, Size) ->
@@ -40,20 +40,20 @@ drop_list(S, Size) ->
 	S;
       true ->
        	Next = derflowdis:next(S),
-	io:format("Drop next ~w ~n",[S]),
+	lager:info("Drop next ~w ~n",[S]),
     	drop_list(Next, Size-1)
     end.
 
 consumer(S2, Size, F) ->
     if Size == 0 ->
-	io:format("Finished~n");
+	lager:info("Finished~n");
 	true ->
 	    case derflowdis:read(S2) of
 		{nil, _} ->
-	   	io:format("Cons:Reading end~n");
+	   	lager:info("Cons:Reading end~n");
 		{Value, Next} ->
 	   	{PS2,_} = S2,
-	   	io:format("Cons:Id ~w Consume ~w, Get ~w, Next~w ~n",[PS2,Value, F(Value),Next]),
+	   	lager:info("Cons:Id ~w Consume ~w, Get ~w, Next~w ~n",[PS2,Value, F(Value),Next]),
 	   	consumer(Next, Size-1, F)
     	end
     end.
