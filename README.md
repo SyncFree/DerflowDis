@@ -1,6 +1,9 @@
 derflowdis: A Riak Core Application
 ======================================
 
+build with gen_rel.sh
+
+
 Application Structure
 ---------------------
 
