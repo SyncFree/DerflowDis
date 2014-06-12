@@ -13,9 +13,9 @@ test()->
 
 run_port(Stream) ->
     receive
-	{Message, From} ->
-	    {id, Next} = derflowdis:bind(Stream, {Message, From}),
-	    run_port(Next)
+    {Message, From} ->
+        {id, Next} = derflowdis:bind(Stream, {Message, From}),
+        run_port(Next)
     end.
 
 sensor(Port, Identifier) ->
@@ -27,12 +27,12 @@ sensor(Port, Identifier) ->
 dcs_monitor(Input, Output, State) ->
     case derflowdis:read(Input) of
     {{computer_down, Identifier}, NextInput} ->
-	NewState = register_comfailure(Identifier, State),
-	{id, NextOutput} = derflowdis:bind(Output, NewState),
-	dcs_monitor(NextInput, NextOutput, NewState);
+    NewState = register_comfailure(Identifier, State),
+    {id, NextOutput} = derflowdis:bind(Output, NewState),
+    dcs_monitor(NextInput, NextOutput, NewState);
     {_, NextInput} ->
-	%ignore
-	dcs_monitor(NextInput, Output, State)
+    %ignore
+    dcs_monitor(NextInput, Output, State)
     end.
 
 register_comfailure(Identifier, State) ->
@@ -44,8 +44,8 @@ acc_register_comfailure(Identifier, [], NewState) ->
 acc_register_comfailure(Identifier, [Next|Rest], NewState) -> 
     case Next of
     {Identifier, Counter} ->
-	UpdatedPartialList = lists:append(NewState,[{Identifier, Counter+1}]),
-	lists:append(UpdatedPartialList, Rest);
+    UpdatedPartialList = lists:append(NewState,[{Identifier, Counter+1}]),
+    lists:append(UpdatedPartialList, Rest);
     _ ->
-	acc_register_comfailure(Identifier, Rest, lists:append(NewState, [Next]))
+    acc_register_comfailure(Identifier, Rest, lists:append(NewState, [Next]))
     end.
