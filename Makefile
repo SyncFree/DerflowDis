@@ -1,9 +1,9 @@
 REBAR = $(shell pwd)/rebar
 .PHONY: deps
 
-all: deps compile
+all: compile
 
-compile:
+compile: deps
 	$(REBAR) compile
 
 deps:
