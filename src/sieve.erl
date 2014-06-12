@@ -17,13 +17,13 @@ test_opt(Max) ->
     derflowdis:async_print_stream(S2).
 
 sieve(S1, S2) ->
-    %io:format("Before read sieve~n"),
+    %lager:info("Before read sieve~n"),
     case derflowdis:read(S1) of
     {nil, _} ->
-        %io:format("After read sieve: nil~n"),
+        %lager:info("After read sieve: nil~n"),
         derflowdis:bind(S2, nil);
     {Value, Next} ->
-        %io:format("After read sieve: ~w~n",[Value]),
+        %lager:info("After read sieve: ~w~n",[Value]),
         {id, SN}=derflowdis:declare(),
 	derflowdis:thread(sieve, filter, [Next, fun(Y) -> Y rem Value =/= 0 end, SN]),
         {id, NextOutput} = derflowdis:bind(S2, Value),
@@ -31,13 +31,13 @@ sieve(S1, S2) ->
     end.    
 
 filter(S1, F, S2) ->
-    %io:format("Before read filter~n"),
+    %lager:info("Before read filter~n"),
     case derflowdis:read(S1) of
     {nil, _} ->
-        %io:format("After read filter: nil~n"),
+        %lager:info("After read filter: nil~n"),
         derflowdis:bind(S2, nil);
     {Value, Next} ->
-        %io:format("After read filter: ~w~n",[Value]),
+        %lager:info("After read filter: ~w~n",[Value]),
 	case F(Value) of
 	false ->
 	    filter(Next, F, S2);

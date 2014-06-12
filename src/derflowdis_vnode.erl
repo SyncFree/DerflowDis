@@ -93,7 +93,7 @@ declare(Id, Partition) ->
     DocIdx = riak_core_util:chash_key({?BUCKET, term_to_binary(Id)}),
     PrefList = riak_core_apl:get_primary_apl(DocIdx, 1, derflowdis),
     [{IndexNode, _Type}] = PrefList,
-    io:format("I am gonna send it to ~w and my partition is ~w~n",[IndexNode, Partition]),
+    lager:info("I am gonna send it to ~w and my partition is ~w~n",[IndexNode, Partition]),
     riak_core_vnode_master:sync_spawn_command(IndexNode, {declare, Id}, derflowdis_vnode_master).
 
 declare(Id) -> 
@@ -150,10 +150,10 @@ handle_command(get_new_id, _From, State=#state{partition=Partition}) ->
     {reply, {Clock,Partition}, State#state{clock=Clock}};
 
 handle_command({declare, Id}, _From, State=#state{table=Table}) ->
-    %io:format("Procces ~w declaring ~w~n",[From, Id]),
+    %lager:info("Procces ~w declaring ~w~n",[From, Id]),
     V = #dv{value=empty},
     ets:insert(Table, {Id, V}),
-    %io:format("End process ~w declaring ~w~n",[From, Id]),
+    %lager:info("End process ~w declaring ~w~n",[From, Id]),
     {reply, {id, Id}, State};
 
 handle_command({asyncBind, Id, F, Arg}, _From, State=#state{partition=Partition, table=Table}) ->
@@ -191,7 +191,7 @@ handle_command({bind, Id, F, Arg}, _From, State=#state{partition=Partition, tabl
     {reply, {id, NextKey}, State#state{clock=NextClock}};
 
 handle_command({bind,Id, Value}, From, State=#state{partition=Partition, table=Table}) ->
-    %io:format("Process ~w asyncBinding ~w~n",[From, Id]),
+    %lager:info("Process ~w asyncBinding ~w~n",[From, Id]),
     case Value of {id, DVId} ->
 	ets:insert(Table, {Id, #dv{value={id,DVId}}}),
 	fetch(DVId, Id, From),
@@ -200,15 +200,15 @@ handle_command({bind,Id, Value}, From, State=#state{partition=Partition, table=T
     	[{_Key,V}] = ets:lookup(Table, Id),
     	{NextClock, NextKey} = nextKey(V#dv.next, State#state.clock, Partition),
     	put(Value, NextKey, Id, Table),
-    	%io:format("End process ~w asyncBinding ~w~n",[From, Id]),
+    	%lager:info("End process ~w asyncBinding ~w~n",[From, Id]),
     	{reply, {id, NextKey}, State#state{clock=NextClock}}
     end;
 
 handle_command({fetch, TargetId, FromId, FromP}, _From, State=#state{partition=Partition,clock= Clock, table=Table}) ->
     [{_,DV}] = ets:lookup(Table, TargetId),
-    io:format("In fetch~w~w DV ~w ~n",[FromId, TargetId, DV]),
+    lager:info("In fetch~w~w DV ~w ~n",[FromId, TargetId, DV]),
     if DV#dv.bounded == true ->
-	  io:format("DV Bounded~n"),
+	  lager:info("DV Bounded~n"),
 	  replyFetch(FromId, FromP, DV),
           {noreply, State};
 	true ->
@@ -217,7 +217,7 @@ handle_command({fetch, TargetId, FromId, FromP}, _From, State=#state{partition=P
 	    	{noreply, State};
 	   _ ->
 	  	{NextClock, NextKey} = nextKey(DV#dv.next, Clock, Partition), 
-	  	io:format("Adding to binding list ~w ~n",[FromId]),
+	  	lager:info("Adding to binding list ~w ~n",[FromId]),
          	BindingList = lists:append(DV#dv.bindingList, [FromId]),
 	  	DV1 = DV#dv{bindingList=BindingList, next=NextKey},
 	  	ets:insert(Table, {TargetId, DV1}),
@@ -269,7 +269,7 @@ handle_command({read,X}, From, State=#state{table=Table}) ->
         Lazy = V#dv.lazy,
         %%%Need to distinguish that value is not calculated or is the end of a list%%%
         if Bounded == true ->
-	  %io:format("Process: ~w read for ~w~n",[From, X]),
+	  %lager:info("Process: ~w read for ~w~n",[From, X]),
           {reply, {Value, V#dv.next}, State};
          true ->
           if Lazy == true ->
@@ -279,11 +279,11 @@ handle_command({read,X}, From, State=#state{table=Table}) ->
 		replyToAll([Creator],ok),
                 {noreply, State};
           true ->
-		io:format("Process: ~w waiting for ~w~n",[From, X]),
+		lager:info("Process: ~w waiting for ~w~n",[From, X]),
                 WT = lists:append(V#dv.waitingThreads, [From]),
                 V1 = V#dv{waitingThreads=WT},
                 ets:insert(Table, {X, V1}),
-	  	%io:format("End process: ~w waiting for ~w~n",[From, X]),
+	  	%lager:info("End process: ~w waiting for ~w~n",[From, X]),
                 {noreply, State}
           end
         end;
@@ -401,7 +401,7 @@ nextKey(PrevNextKey, Clock, Partition) ->
         NextKey={NextClock, Partition},
         declare(NextKey);
     true ->
-        %io:format("Very WEIRD asyncBinding case ~w~n",[Id]),
+        %lager:info("Very WEIRD asyncBinding case ~w~n",[Id]),
         NextClock = Clock,
         %{Next, _} = PrevNextKey,
         NextKey= PrevNextKey
@@ -413,14 +413,14 @@ replyToAll([], _Result) ->
 
 replyToAll([H|T], Result) ->
     {server, undefined,{Address, Ref}} = H,
-    io:format("Replying ~w reply ~w~n", [H, Result]),
+    lager:info("Replying ~w reply ~w~n", [H, Result]),
     gen_server:reply({Address, Ref}, Result),
     replyToAll(T, Result).
 
 notifyAll(L, Value) ->
     case L of [H|T] ->
     	notifyValue(H, Value),
-        io:format("Notifying ~w~n", [H]),
+        lager:info("Notifying ~w~n", [H]),
 	notifyAll(T, Value);
 	[] ->
 	ok

@@ -10,7 +10,7 @@ test1() ->
     derflowdis:async_print_stream(S2).
     %L = derflowdis:get_stream(S2),
     %L.
-    %io:format("Output: ~w~n",[L]).
+    %lager:info("Output: ~w~n",[L]).
     %S2.
 
 producer(Init, N, Output) ->
